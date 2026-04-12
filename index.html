@@ -1,43 +1,900 @@
-// Diffused Gas Visualization and Escaped Particles Recycling
-
-function generateGasParticles() {
-    // Generate gas particles with lower brightness and saturation
-    const gasParticles = [];
-    for (let i = 0; i < 100; i++) {
-        const particle = {
-            size: Math.random() * 5,
-            brightness: Math.random() * 0.5, // Lower brightness
-            saturation: Math.random() * 0.5, // Lower saturation
-            speed: stellarSpeed * 0.6, // 60% of stellar speed
-        };
-        gasParticles.push(particle);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anshuman Borgohain</title>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --void:    #04050d;
+      --deep:    #080c1a;
+      --surface: #0d1226;
+      --rule:    #1e2a4a;
+      --fg:      #e8eaf6;
+      --muted:   #7b8ab8;
+      --glow:    #4f7cff;
+      --star:    #ffd97d;
+      --white:   #f0f2ff;
     }
-    return gasParticles;
-}
 
-function updateDiffusedGas(gasParticles) {
-    // Move gas particles and respond to gravity
-    for (const particle of gasParticles) {
-        particle.y -= gravity * 0.5; // Moving slower
-        // Logic to recycle particles if they drift too far
-        if (particle.y < -60) {
-            recycleParticle(particle);
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--void);
+      color: var(--fg);
+      line-height: 1.75;
+      font-size: 16px;
+      overflow-x: hidden;
+    }
+
+    /* ── STARFIELD ── */
+    #starfield {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── NEBULA BLOBS ── */
+    .nebula-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .nebula-bg::before {
+      content: '';
+      position: absolute;
+      top: -20%; left: -10%;
+      width: 60vw; height: 60vw;
+      background: radial-gradient(ellipse, #7c4dff14 0%, transparent 70%);
+      border-radius: 50%;
+      animation: drift 30s ease-in-out infinite alternate;
+    }
+    .nebula-bg::after {
+      content: '';
+      position: absolute;
+      bottom: -10%; right: -10%;
+      width: 50vw; height: 50vw;
+      background: radial-gradient(ellipse, #4f7cff10 0%, transparent 70%);
+      border-radius: 50%;
+      animation: drift 38s ease-in-out infinite alternate-reverse;
+    }
+    @keyframes drift {
+      from { transform: translate(0, 0) scale(1); }
+      to   { transform: translate(4%, 3%) scale(1.08); }
+    }
+
+    .page { position: relative; z-index: 1; }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 3rem;
+      background: #04050dee;
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .nav-logo {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+      color: var(--white);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .nav-logo-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--glow);
+      box-shadow: 0 0 8px var(--glow);
+      animation: pulse 3s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--glow); }
+      50%       { opacity: 0.5; box-shadow: 0 0 20px var(--glow); }
+    }
+
+    nav ul { list-style: none; display: flex; gap: 2.2rem; }
+
+    nav a {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--muted);
+      transition: color 0.2s;
+      position: relative;
+    }
+    nav a::after {
+      content: '';
+      position: absolute;
+      bottom: -3px; left: 0;
+      width: 0; height: 1px;
+      background: var(--glow);
+      box-shadow: 0 0 6px var(--glow);
+      transition: width 0.25s ease;
+    }
+    nav a:hover { color: var(--white); }
+    nav a:hover::after { width: 100%; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0 3rem 5rem;
+      position: relative;
+    }
+
+    .hero-coords {
+      position: absolute;
+      top: 90px; right: 3rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-align: right;
+      line-height: 1.9;
+      opacity: 0.55;
+    }
+
+    .hero-inner { max-width: 800px; }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--glow);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 1.6rem;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.2s both;
+    }
+    .hero-tag::before {
+      content: '';
+      display: block;
+      width: 20px; height: 1px;
+      background: var(--glow);
+      box-shadow: 0 0 6px var(--glow);
+    }
+
+    .hero-name {
+      font-family: 'Libre Baskerville', serif;
+      font-size: clamp(3rem, 6vw, 5.5rem);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--white);
+      margin-bottom: 0.4rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.3s both;
+    }
+
+    .hero-name .outline {
+      color: transparent;
+      -webkit-text-stroke: 1.5px var(--glow);
+    }
+
+    .hero-subtitle {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 300;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.4s both;
+    }
+
+    .hero-bio {
+      font-size: 1.05rem;
+      font-weight: 300;
+      color: #a8b4d8;
+      max-width: 54ch;
+      line-height: 1.85;
+      margin-bottom: 2.8rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.5s both;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.6s both;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.6rem;
+      font-family: 'Barlow', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: 1px solid;
+      cursor: pointer;
+      transition: all 0.22s ease;
+    }
+
+    .btn-primary {
+      background: var(--glow);
+      color: var(--void);
+      border-color: var(--glow);
+      box-shadow: 0 0 20px #4f7cff33;
+    }
+    .btn-primary:hover {
+      background: transparent;
+      color: var(--glow);
+      box-shadow: 0 0 30px #4f7cff44;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border-color: var(--rule);
+    }
+    .btn-ghost:hover { color: var(--white); border-color: var(--muted); }
+
+    /* ── STATS STRIP ── */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      background: #080c1aaa;
+      backdrop-filter: blur(8px);
+    }
+
+    .stat {
+      padding: 2rem 2.5rem;
+      border-right: 1px solid var(--rule);
+      position: relative;
+      overflow: hidden;
+    }
+    .stat:last-child { border-right: none; }
+    .stat::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 0; height: 2px;
+      background: var(--glow);
+      box-shadow: 0 0 8px var(--glow);
+      transition: width 0.4s ease;
+    }
+    .stat:hover::after { width: 100%; }
+
+    .stat-num {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 2.6rem;
+      font-weight: 400;
+      color: var(--white);
+      line-height: 1;
+      margin-bottom: 0.3rem;
+    }
+    .stat-num span { font-size: 1.4rem; color: var(--glow); }
+
+    .stat-lbl {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── CONTENT ── */
+    .content { max-width: 1100px; margin: 0 auto; padding: 0 3rem; }
+
+    .section {
+      padding: 6rem 0;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .section-meta {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 3.5rem;
+    }
+
+    .section-num {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--glow);
+      opacity: 0.7;
+    }
+
+    .section-title {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 2rem;
+      font-weight: 400;
+      color: var(--white);
+      letter-spacing: -0.01em;
+    }
+    .section-title em { font-style: italic; color: var(--muted); }
+
+    /* ── RESEARCH ── */
+    .research-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--rule);
+      border: 1px solid var(--rule);
+    }
+
+    .r-card {
+      background: var(--surface);
+      padding: 2.2rem 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.25s;
+    }
+    .r-card:hover { background: #131d38; }
+
+    .r-card-glow {
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 130px; height: 130px;
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.35s;
+      pointer-events: none;
+    }
+    .r-card:hover .r-card-glow { opacity: 1; }
+    .r-card:nth-child(1) .r-card-glow { background: radial-gradient(circle, #4f7cff22, transparent 70%); }
+    .r-card:nth-child(2) .r-card-glow { background: radial-gradient(circle, #7c4dff22, transparent 70%); }
+    .r-card:nth-child(3) .r-card-glow { background: radial-gradient(circle, #ffd97d22, transparent 70%); }
+
+    .r-card-icon { font-size: 1.6rem; margin-bottom: 1.2rem; display: block; }
+
+    .r-card-title {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 0.7rem;
+      line-height: 1.35;
+    }
+
+    .r-card-desc {
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    /* ── PUBLICATIONS ── */
+    .pub-list { list-style: none; }
+
+    .pub-item {
+      display: grid;
+      grid-template-columns: 70px 1fr auto;
+      gap: 2rem;
+      padding: 1.8rem 0;
+      border-bottom: 1px solid var(--rule);
+      align-items: start;
+    }
+    .pub-item:first-child { border-top: 1px solid var(--rule); }
+
+    .pub-year {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding-top: 0.25rem;
+    }
+
+    .pub-title {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 1.05rem;
+      font-weight: 400;
+      color: var(--white);
+      margin-bottom: 0.25rem;
+      line-height: 1.45;
+    }
+
+    .pub-authors {
+      font-size: 0.85rem;
+      font-weight: 300;
+      color: var(--muted);
+      margin-bottom: 0.15rem;
+    }
+    .pub-authors strong { color: #a8b4d8; font-weight: 500; }
+
+    .pub-venue { font-size: 0.82rem; font-style: italic; color: var(--glow); opacity: 0.8; }
+
+    .pub-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      padding: 0.2rem 0.55rem;
+      border: 1px solid;
+      white-space: nowrap;
+      letter-spacing: 0.08em;
+      align-self: center;
+    }
+    .badge-featured { color: var(--star); border-color: #ffd97d55; background: #ffd97d0a; }
+
+    /* ── CONTACT ── */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--rule);
+      border: 1px solid var(--rule);
+    }
+
+    .contact-cell {
+      background: var(--surface);
+      padding: 2rem 2.2rem;
+      transition: background 0.2s;
+    }
+    .contact-cell:hover { background: #131d38; }
+
+    .contact-lbl {
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .contact-val {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 1.05rem;
+      color: var(--white);
+    }
+    .contact-val a { color: var(--glow); text-decoration: none; }
+    .contact-val a:hover { text-decoration: underline; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 2rem 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── TOGGLE ── */
+    .toggle {
+      position: fixed;
+      right: 1.5rem;
+      bottom: 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      padding: 0.4rem 1rem;
+      font-size: 0.72rem;
+      font-family: 'Barlow', sans-serif;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      color: var(--muted);
+      z-index: 200;
+      transition: all 0.2s;
+    }
+    .toggle:hover { border-color: var(--glow); color: var(--glow); }
+
+    /* ── LIGHT MODE ── */
+    html.light {
+      --void:    #eef0fb;
+      --deep:    #e2e6f7;
+      --surface: #ffffff;
+      --rule:    #c8ceec;
+      --fg:      #0d1226;
+      --muted:   #4a5580;
+      --glow:    #2a5bd7;
+      --star:    #9a6800;
+      --white:   #080c1a;
+    }
+    html.light body { background: var(--void); }
+    html.light nav { background: #eef0fbee; }
+    html.light .stats-strip { background: #e2e6f7aa; }
+    html.light .r-card { background: #f5f7ff; }
+    html.light .r-card:hover { background: #eaedff; }
+    html.light .contact-cell { background: #f5f7ff; }
+    html.light .contact-cell:hover { background: #eaedff; }
+    html.light .hero-bio { color: #3a4470; }
+    html.light .nebula-bg::before { background: radial-gradient(ellipse, #7c4dff08 0%, transparent 70%); }
+    html.light .nebula-bg::after  { background: radial-gradient(ellipse, #4f7cff06 0%, transparent 70%); }
+    html.light #starfield { opacity: 0.15; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 800px) {
+      nav { padding: 1rem 1.5rem; }
+      nav ul { gap: 1.2rem; }
+      .hero { padding: 0 1.5rem 4rem; }
+      .hero-coords { display: none; }
+      .stats-strip { grid-template-columns: 1fr 1fr; }
+      .stat:nth-child(2) { border-right: none; }
+      .content { padding: 0 1.5rem; }
+      .research-grid { grid-template-columns: 1fr; }
+      .contact-grid { grid-template-columns: 1fr; }
+      .pub-item { grid-template-columns: 50px 1fr; }
+      .pub-badge { display: none; }
+      footer { flex-direction: column; gap: 0.5rem; text-align: center; padding: 2rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div class="nebula-bg"></div>
+
+<div class="page">
+  <button class="toggle" id="toggle-btn">☀ Light</button>
+
+  <nav>
+    <a href="#about" class="nav-logo">
+      <span class="nav-logo-dot"></span>
+      Anshuman Borgohain
+    </a>
+    <ul>
+      <li><a href="#about">About</a></li>
+      <li><a href="#research">Research</a></li>
+      <li><a href="#publications">Publications</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" id="about">
+    <div class="hero-coords">
+      RA  10h 44m 57s<br>
+      Dec +12° 21′ 53″<br>
+      z ~ 0.3 – 3.0<br>
+      ── Galaxy Formation ──
+    </div>
+    <div class="hero-inner">
+      <div class="hero-tag">Astronomy &amp; Astrophysics</div>
+      <h1 class="hero-name">Anshuman Borgohain</h1>
+      <p class="hero-subtitle">Post Doctoral Fellow<br>Inter-University Centre for Astronomy and Astrophysics (IUCAA)</p>
+      <p class="hero-bio">
+        I study how galaxies form, grow, and transform across cosmic time. My work combines observational data, simulations, and statistical methods to understand the processes that shape the large-scale structure of the universe.
+      </p>
+      <div class="hero-actions">
+        <a href="#publications" class="btn btn-primary">Publications</a>
+        <a href="#contact" class="btn btn-ghost">Contact</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-strip">
+    <div class="stat">
+      <div class="stat-num">24<span>+</span></div>
+      <div class="stat-lbl">Publications</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">8</div>
+      <div class="stat-lbl">Years Research</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">3</div>
+      <div class="stat-lbl">Active Grants</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">6</div>
+      <div class="stat-lbl">Collaborators</div>
+    </div>
+  </div>
+
+  <!-- RESEARCH -->
+  <div class="content">
+    <section class="section" id="research">
+      <div class="section-meta">
+        <span class="section-num">02 ——</span>
+        <h2 class="section-title">Research <em>Interests</em></h2>
+      </div>
+      <div class="research-grid">
+        <div class="r-card">
+          <div class="r-card-glow"></div>
+          <span class="r-card-icon">🌌</span>
+          <div class="r-card-title">Galaxy Formation &amp; Evolution</div>
+          <p class="r-card-desc">Tracing how galaxies assemble their stellar mass over cosmic time through star formation, mergers, and feedback processes.</p>
+        </div>
+        <div class="r-card">
+          <div class="r-card-glow"></div>
+          <span class="r-card-icon">🔭</span>
+          <div class="r-card-title">High-Redshift Observations</div>
+          <p class="r-card-desc">Observing the early universe with spectroscopic surveys to characterize galaxy populations in the first few billion years after the Big Bang.</p>
+        </div>
+        <div class="r-card">
+          <div class="r-card-glow"></div>
+          <span class="r-card-icon">⚛️</span>
+          <div class="r-card-title">Interstellar Medium &amp; Feedback</div>
+          <p class="r-card-desc">Understanding how gas, dust, and AGN feedback regulate star formation and shape the structure of galaxies across environments.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PUBLICATIONS -->
+    <section class="section" id="publications">
+      <div class="section-meta">
+        <span class="section-num">03 ——</span>
+        <h2 class="section-title">Selected <em>Publications</em></h2>
+      </div>
+      <ul class="pub-list">
+        <li class="pub-item">
+          <div class="pub-year">2024</div>
+          <div>
+            <div class="pub-title">Title of Paper One</div>
+            <div class="pub-authors"><strong>Anshuman Borgohain</strong>, Coauthor A., Coauthor B.</div>
+            <div class="pub-venue">The Astrophysical Journal, Vol. X, Page Y</div>
+          </div>
+          <span class="pub-badge badge-featured">★ Featured</span>
+        </li>
+        <li class="pub-item">
+          <div class="pub-year">2023</div>
+          <div>
+            <div class="pub-title">Title of Paper Two</div>
+            <div class="pub-authors"><strong>Anshuman Borgohain</strong>, Coauthor C.</div>
+            <div class="pub-venue">Monthly Notices of the RAS, Vol. X, Page Y</div>
+          </div>
+          <span></span>
+        </li>
+        <li class="pub-item">
+          <div class="pub-year">2022</div>
+          <div>
+            <div class="pub-title">Title of Paper Three</div>
+            <div class="pub-authors">Coauthor D., <strong>Anshuman Borgohain</strong></div>
+            <div class="pub-venue">Astronomy &amp; Astrophysics, Vol. X, Page Y</div>
+          </div>
+          <span></span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="section" id="contact" style="border-bottom:none;">
+      <div class="section-meta">
+        <span class="section-num">04 ——</span>
+        <h2 class="section-title">Get in <em>Touch</em></h2>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-cell">
+          <div class="contact-lbl">Email</div>
+          <div class="contact-val"><a href="/cdn-cgi/l/email-protection#0c7563797e2269616d65604c7962657a697e7f65787522696879"><span class="__cf_email__" data-cfemail="d7aeb8a2a5f9b2bab6bebb97a2b9bea1b2a5a4bea3aef9b2b3a2">[email&#160;protected]</span></a></div>
+        </div>
+        <div class="contact-cell">
+          <div class="contact-lbl">Office</div>
+          <div class="contact-val">Room 123, XYZ Building</div>
+        </div>
+        <div class="contact-cell">
+          <div class="contact-lbl">Institution</div>
+          <div class="contact-val">IUCAA, Pune</div>
+        </div>
+        <div class="contact-cell">
+          <div class="contact-lbl">Department</div>
+          <div class="contact-val">Dept. of Astronomy &amp; Astrophysics</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <span>© 2025 Anshuman Borgohain · Astrophysics Researcher</span>
+    <span>Last updated Mar 2026</span>
+  </footer>
+</div>
+
+<script>
+  /* ── STARFIELD + N-BODY GALAXY INTERACTIONS ── */
+  (function () {
+    const canvas = document.getElementById('starfield');
+    const ctx    = canvas.getContext('2d');
+    const G = 1.0, SOFT = 1.6, DT = 0.013;
+
+    /* ── STARS ── */
+    let stars = [];
+    function buildStars() {
+      stars = [];
+      const count = Math.floor((canvas.width * canvas.height) / 3500);
+      for (let i = 0; i < count; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          r: Math.random() * 1.4 + 0.2,
+          speed: Math.random() * 0.004 + 0.001,
+          phase: Math.random() * Math.PI * 2,
+          color: Math.random() > 0.85 ? '#ffd97d' : Math.random() > 0.7 ? '#aac0ff' : '#e8eaf6'
+        });
+      }
+    }
+
+    /* ── N-BODY SYSTEM FACTORY ──
+       scx/scy  : screen anchor (pixels)
+       SC       : sim-units → pixels scale
+       M1/M2    : core masses
+       sep      : initial separation (sim units)
+       vFrac    : fraction of circular velocity (< 1 = elliptic infall)
+       pro2     : companion disc prograde (true) or retrograde (false)
+       h1/h2    : hue for each galaxy
+       n1/n2    : particle counts
+       r1/r2max : max disc radius (sim units)
+    ── */
+    function makeSystem(scx, scy, SC, M1, M2, sep, vFrac, pro2, h1, h2, n1, n2, r1max, r2max) {
+      const vOrb = Math.sqrt(G * (M1 + M2) / sep) * vFrac;
+      const c1 = { x: sep*M2/(M1+M2), y:0, vx:0, vy: vOrb*M2/(M1+M2), mass:M1, hue:h1, gr: SC*0.48 };
+      const c2 = { x:-sep*M1/(M1+M2), y:0, vx:0, vy:-vOrb*M1/(M1+M2), mass:M2, hue:h2, gr: SC*0.32 };
+      const pts = [];
+      function disc(core, n, rMin, rMax, hue, pro) {
+        for (let i = 0; i < n; i++) {
+          const r  = rMin + Math.pow(Math.random(), 1.7) * (rMax - rMin); // realistic density falloff
+          const th = Math.random() * Math.PI * 2;
+          const vc = Math.sqrt(G * core.mass / (r + SOFT));
+          const s  = pro ? 1 : -1;
+          pts.push({
+            x:  core.x + Math.cos(th) * r,
+            y:  core.y + Math.sin(th) * r,
+            vx: core.vx - Math.sin(th) * s * vc,
+            vy: core.vy + Math.cos(th) * s * vc,
+            hue:    hue + (Math.random() - 0.5) * 35,
+            bright: 0.45 + Math.random() * 0.55,
+            r:      0.55 + Math.random() * 0.85
+          });
         }
+      }
+      disc(c1, n1, 0.3, r1max, h1, true);
+      disc(c2, n2, 0.3, r2max, h2, pro2);
+      return { c1, c2, pts, scx, scy, SC };
     }
-}
 
-function recycleParticle(particle) {
-    // Recycle the escaped particle back into the disc
-    particle.y = 0; // Reset position
-    // Other recycling logistics here
-}
+    /* ── TWO SYSTEMS, CORNER-PINNED ──
+       System A (top-right)  : Antennae-style — prograde+retrograde pair
+       System B (bottom-left): Close flyby — both prograde, nearly merged
+    ── */
+    let systems = [];
+    function buildSystems() {
+      const W = canvas.width, H = canvas.height;
+      systems = [
+        // Top-right — Antennae style (NGC 4038/39): retrograde companion → long symmetric tails
+        makeSystem(W*0.80, H*0.22,  28,  16, 10,  9.5, 0.73, false, 205, 232,  540, 340, 5.4, 3.8),
+        // Bottom-left — close prograde flyby: both discs prograde → one long tail + bridge
+        makeSystem(W*0.20, H*0.76,  22,  13,  9,  8.5, 0.71,  true, 268, 294,  420, 260, 4.6, 3.3),
+      ];
+    }
 
-// Main update function
-function update() {
-    const gasParticles = generateGasParticles();
-    updateDiffusedGas(gasParticles);
-    // Render gas particles before bright stellar particles
-}
+    /* ── LEAPFROG INTEGRATOR ── */
+    function step(sys) {
+      const { c1, c2, pts } = sys;
+      const dx = c2.x-c1.x, dy = c2.y-c1.y;
+      const d2 = dx*dx + dy*dy + SOFT*SOFT, d = Math.sqrt(d2);
+      const f  = G / d2;
+      c1.vx += f*c2.mass*dx/d*DT;  c1.vy += f*c2.mass*dy/d*DT;
+      c2.vx -= f*c1.mass*dx/d*DT;  c2.vy -= f*c1.mass*dy/d*DT;
+      c1.x  += c1.vx*DT;           c1.y  += c1.vy*DT;
+      c2.x  += c2.vx*DT;           c2.y  += c2.vy*DT;
+      const cores = [c1, c2];
+      for (const p of pts) {
+        let ax = 0, ay = 0;
+        for (const c of cores) {
+          const ex = c.x-p.x, ey = c.y-p.y;
+          const r2 = ex*ex + ey*ey + SOFT*SOFT, r = Math.sqrt(r2);
+          const f2 = G*c.mass/r2;
+          ax += f2*ex/r;  ay += f2*ey/r;
+        }
+        p.vx += ax*DT;  p.vy += ay*DT;
+        p.x  += p.vx*DT; p.y += p.vy*DT;
+      }
+    }
 
-// Call update function in the animation loop
-setInterval(update, 1000 / 60); // 60 frames per second
+    /* ── DRAW ONE SYSTEM — additive blending ── */
+    function drawSys(sys) {
+      const { c1, c2, pts, scx, scy, SC } = sys;
+      const toS = (sx, sy) => [scx + sx*SC, scy + sy*SC];
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter'; // additive: stacked particles glow like real sims
+
+      for (const p of pts) {
+        const [px, py] = toS(p.x, p.y);
+        if (px < -50 || px > canvas.width+50 || py < -50 || py > canvas.height+50) continue;
+        const gr = ctx.createRadialGradient(px, py, 0, px, py, p.r * 2.4);
+        gr.addColorStop(0,   `hsla(${p.hue},92%,94%,${p.bright * 0.52})`);
+        gr.addColorStop(0.5, `hsla(${p.hue},80%,72%,${p.bright * 0.16})`);
+        gr.addColorStop(1,   `hsla(${p.hue},70%,50%,0)`);
+        ctx.beginPath();
+        ctx.arc(px, py, p.r * 2.4, 0, Math.PI * 2);
+        ctx.fillStyle = gr;
+        ctx.fill();
+      }
+
+      // Bright nuclei
+      for (const core of [c1, c2]) {
+        const [cx, cy] = toS(core.x, core.y);
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, core.gr);
+        g.addColorStop(0,   `hsla(${core.hue},100%,100%,1)`);
+        g.addColorStop(0.25,`hsla(${core.hue},90%,88%,0.85)`);
+        g.addColorStop(0.6, `hsla(${core.hue},75%,65%,0.30)`);
+        g.addColorStop(1,   `hsla(${core.hue},65%,45%,0)`);
+        ctx.beginPath();
+        ctx.arc(cx, cy, core.gr, 0, Math.PI * 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    /* ── MAIN LOOP ── */
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+      buildStars();
+      buildSystems();
+    }
+
+    function draw(t) {
+      const isLight = document.documentElement.classList.contains('light');
+
+      // Slight fade instead of full clear → motion-blur / star-trail feel
+      ctx.fillStyle = isLight ? 'rgba(238,240,251,0.55)' : 'rgba(4,5,13,0.20)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Stars (normal blend, always visible)
+      for (const s of stars) {
+        const alpha = 0.3 + 0.7 * Math.abs(Math.sin(s.phase + t * s.speed));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle   = s.color;
+        ctx.globalAlpha = isLight ? alpha * 0.15 : alpha;
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // Sim + draw (dark only)
+      if (!isLight) {
+        for (let i = 0; i < 6; i++) systems.forEach(step);
+        systems.forEach(drawSys);
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    requestAnimationFrame(draw);
+  })();
+
+  /* ── LIGHT / DARK TOGGLE ── */
+  document.getElementById('toggle-btn').addEventListener('click', function () {
+    const isLight = document.documentElement.classList.toggle('light');
+    this.textContent = isLight ? '☽ Dark' : '☀ Light';
+  });
+</script>
+</body>
+</html>
