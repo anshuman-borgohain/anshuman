@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dr. Your Name – Astrophysics Researcher</title>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Barlow:wght@300;400;500;600&family=Barlow+Condensed:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --void:    #04050d;
+      --deep:    #080c1a;
+      --surface: #0d1226;
+      --rule:    #1e2a4a;
+      --fg:      #e8eaf6;
+      --muted:   #7b8ab8;
+      --glow:    #4f7cff;
+      --star:    #ffd97d;
+      --white:   #f0f2ff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Barlow', sans-serif;
+      background: var(--void);
+      color: var(--fg);
+      line-height: 1.75;
+      font-size: 16px;
+      overflow-x: hidden;
+    }
+
+    /* ── STARFIELD ── */
+    #starfield {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── NEBULA BLOBS ── */
+    .nebula-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .nebula-bg::before {
+      content: '';
+      position: absolute;
+      top: -20%; left: -10%;
+      width: 60vw; height: 60vw;
+      background: radial-gradient(ellipse, #7c4dff14 0%, transparent 70%);
+      border-radius: 50%;
+      animation: drift 30s ease-in-out infinite alternate;
+    }
+    .nebula-bg::after {
+      content: '';
+      position: absolute;
+      bottom: -10%; right: -10%;
+      width: 50vw; height: 50vw;
+      background: radial-gradient(ellipse, #4f7cff10 0%, transparent 70%);
+      border-radius: 50%;
+      animation: drift 38s ease-in-out infinite alternate-reverse;
+    }
+    @keyframes drift {
+      from { transform: translate(0, 0) scale(1); }
+      to   { transform: translate(4%, 3%) scale(1.08); }
+    }
+
+    .page { position: relative; z-index: 1; }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 3rem;
+      background: #04050dee;
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .nav-logo {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+      color: var(--white);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .nav-logo-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--glow);
+      box-shadow: 0 0 8px var(--glow);
+      animation: pulse 3s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--glow); }
+      50%       { opacity: 0.5; box-shadow: 0 0 20px var(--glow); }
+    }
+
+    nav ul { list-style: none; display: flex; gap: 2.2rem; }
+
+    nav a {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--muted);
+      transition: color 0.2s;
+      position: relative;
+    }
+    nav a::after {
+      content: '';
+      position: absolute;
+      bottom: -3px; left: 0;
+      width: 0; height: 1px;
+      background: var(--glow);
+      box-shadow: 0 0 6px var(--glow);
+      transition: width 0.25s ease;
+    }
+    nav a:hover { color: var(--white); }
+    nav a:hover::after { width: 100%; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 0 3rem 5rem;
+      position: relative;
+    }
+
+    .hero-coords {
+      position: absolute;
+      top: 90px; right: 3rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-align: right;
+      line-height: 1.9;
+      opacity: 0.55;
+    }
+
+    .hero-inner { max-width: 800px; }
+
+    .hero-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--glow);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 1.6rem;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.2s both;
+    }
+    .hero-tag::before {
+      content: '';
+      display: block;
+      width: 20px; height: 1px;
+      background: var(--glow);
+      box-shadow: 0 0 6px var(--glow);
+    }
+
+    .hero-name {
+      font-family: 'Libre Baskerville', serif;
+      font-size: clamp(3rem, 6vw, 5.5rem);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      color: var(--white);
+      margin-bottom: 0.4rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.3s both;
+    }
+
+    .hero-name .outline {
+      color: transparent;
+      -webkit-text-stroke: 1.5px var(--glow);
+    }
+
+    .hero-subtitle {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 300;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+      margin-bottom: 2rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.4s both;
+    }
+
+    .hero-bio {
+      font-size: 1.05rem;
+      font-weight: 300;
+      color: #a8b4d8;
+      max-width: 54ch;
+      line-height: 1.85;
+      margin-bottom: 2.8rem;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.5s both;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.6s both;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.6rem;
+      font-family: 'Barlow', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: 1px solid;
+      cursor: pointer;
+      transition: all 0.22s ease;
+    }
+
+    .btn-primary {
+      background: var(--glow);
+      color: var(--void);
+      border-color: var(--glow);
+      box-shadow: 0 0 20px #4f7cff33;
+    }
+    .btn-primary:hover {
+      background: transparent;
+      color: var(--glow);
+      box-shadow: 0 0 30px #4f7cff44;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border-color: var(--rule);
+    }
+    .btn-ghost:hover { color: var(--white); border-color: var(--muted); }
+
+    /* ── STATS STRIP ── */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      background: #080c1aaa;
+      backdrop-filter: blur(8px);
+    }
+
+    .stat {
+      padding: 2rem 2.5rem;
+      border-right: 1px solid var(--rule);
+      position: relative;
+      overflow: hidden;
+    }
+    .stat:last-child { border-right: none; }
+    .stat::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 0; height: 2px;
+      background: var(--glow);
+      box-shadow: 0 0 8px var(--glow);
+      transition: width 0.4s ease;
+    }
+    .stat:hover::after { width: 100%; }
+
+    .stat-num {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 2.6rem;
+      font-weight: 400;
+      color: var(--white);
+      line-height: 1;
+      margin-bottom: 0.3rem;
+    }
+    .stat-num span { font-size: 1.4rem; color: var(--glow); }
+
+    .stat-lbl {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── CONTENT ── */
+    .content { max-width: 1100px; margin: 0 auto; padding: 0 3rem; }
+
+    .section {
+      padding: 6rem 0;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .section-meta {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      margin-bottom: 3.5rem;
+    }
+
+    .section-num {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--glow);
+      opacity: 0.7;
+    }
+
+    .section-title {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 2rem;
+      font-weight: 400;
+      color: var(--white);
+      letter-spacing: -0.01em;
+    }
+    .section-title em { font-style: italic; color: var(--muted); }
+
+    /* ── RESEARCH ── */
+    .research-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--rule);
+      border: 1px solid var(--rule);
+    }
+
+    .r-card {
+      background: var(--surface);
+      padding: 2.2rem 2rem;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.25s;
+    }
+    .r-card:hover { background: #131d38; }
+
+    .r-card-glow {
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 130px; height: 130px;
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.35s;
+      pointer-events: none;
+    }
+    .r-card:hover .r-card-glow { opacity: 1; }
+    .r-card:nth-child(1) .r-card-glow { background: radial-gradient(circle, #4f7cff22, transparent 70%); }
+    .r-card:nth-child(2) .r-card-glow { background: radial-gradient(circle, #7c4dff22, transparent 70%); }
+    .r-card:nth-child(3) .r-card-glow { background: radial-gradient(circle, #ffd97d22, transparent 70%); }
+
+    .r-card-icon { font-size: 1.6rem; margin-bottom: 1.2rem; display: block; }
+
+    .r-card-title {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 0.7rem;
+      line-height: 1.35;
+    }
+
+    .r-card-desc {
+      font-size: 0.9rem;
+      font-weight: 300;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    /* ── PUBLICATIONS ── */
+    .pub-list { list-style: none; }
+
+    .pub-item {
+      display: grid;
+      grid-template-columns: 70px 1fr auto;
+      gap: 2rem;
+      padding: 1.8rem 0;
+      border-bottom: 1px solid var(--rule);
+      align-items: start;
+    }
+    .pub-item:first-child { border-top: 1px solid var(--rule); }
+
+    .pub-year {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+      padding-top: 0.25rem;
+    }
+
+    .pub-title {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 1.05rem;
+      font-weight: 400;
+      color: var(--white);
+      margin-bottom: 0.25rem;
+      line-height: 1.45;
+    }
+
+    .pub-authors {
+      font-size: 0.85rem;
+      font-weight: 300;
+      color: var(--muted);
+      margin-bottom: 0.15rem;
+    }
+    .pub-authors strong { color: #a8b4d8; font-weight: 500; }
+
+    .pub-venue { font-size: 0.82rem; font-style: italic; color: var(--glow); opacity: 0.8; }
+
+    .pub-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      padding: 0.2rem 0.55rem;
+      border: 1px solid;
+      white-space: nowrap;
+      letter-spacing: 0.08em;
+      align-self: center;
+    }
+    .badge-featured { color: var(--star); border-color: #ffd97d55; background: #ffd97d0a; }
+
+    /* ── CONTACT ── */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--rule);
+      border: 1px solid var(--rule);
+    }
+
+    .contact-cell {
+      background: var(--surface);
+      padding: 2rem 2.2rem;
+      transition: background 0.2s;
+    }
+    .contact-cell:hover { background: #131d38; }
+
+    .contact-lbl {
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .contact-val {
+      font-family: 'Libre Baskerville', serif;
+      font-size: 1.05rem;
+      color: var(--white);
+    }
+    .contact-val a { color: var(--glow); text-decoration: none; }
+    .contact-val a:hover { text-decoration: underline; }
+
+    /* ── FOOTER ── */
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 2rem 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── TOGGLE ── */
+    .toggle {
+      position: fixed;
+      right: 1.5rem;
+      bottom: 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      padding: 0.4rem 1rem;
+      font-size: 0.72rem;
+      font-family: 'Barlow', sans-serif;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      color: var(--muted);
+      z-index: 200;
+      transition: all 0.2s;
+    }
+    .toggle:hover { border-color: var(--glow); color: var(--glow); }
+
+    /* ── LIGHT MODE ── */
+    html.light {
+      --void:    #eef0fb;
+      --deep:    #e2e6f7;
+      --surface: #ffffff;
+      --rule:    #c8ceec;
+      --fg:      #0d1226;
+      --muted:   #4a5580;
+      --glow:    #2a5bd7;
+      --star:    #9a6800;
+      --white:   #080c1a;
+    }
+    html.light body { background: var(--void); }
+    html.light nav { background: #eef0fbee; }
+    html.light .stats-strip { background: #e2e6f7aa; }
+    html.light .r-card { background: #f5f7ff; }
+    html.light .r-card:hover { background: #eaedff; }
+    html.light .contact-cell { background: #f5f7ff; }
+    html.light .contact-cell:hover { background: #eaedff; }
+    html.light .hero-bio { color: #3a4470; }
+    html.light .nebula-bg::before { background: radial-gradient(ellipse, #7c4dff08 0%, transparent 70%); }
+    html.light .nebula-bg::after  { background: radial-gradient(ellipse, #4f7cff06 0%, transparent 70%); }
+    html.light #starfield { opacity: 0.15; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 800px) {
+      nav { padding: 1rem 1.5rem; }
+      nav ul { gap: 1.2rem; }
+      .hero { padding: 0 1.5rem 4rem; }
+      .hero-coords { display: none; }
+      .stats-strip { grid-template-columns: 1fr 1fr; }
+      .stat:nth-child(2) { border-right: none; }
+      .content { padding: 0 1.5rem; }
+      .research-grid { grid-template-columns: 1fr; }
+      .contact-grid { grid-template-columns: 1fr; }
+      .pub-item { grid-template-columns: 50px 1fr; }
+      .pub-badge { display: none; }
+      footer { flex-direction: column; gap: 0.5rem; text-align: center; padding: 2rem 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div class="nebula-bg"></div>
+
+<div class="page">
+  <button class="toggle" id="toggle-btn">☀ Light</button>
+
+  <nav>
+    <a href="#about" class="nav-logo">
+      <span class="nav-logo-dot"></span>
+      Dr. Your Name
+    </a>
+    <ul>
+      <li><a href="#about">About</a></li>
+      <li><a href="#research">Research</a></li>
+      <li><a href="#publications">Publications</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" id="about">
+    <div class="hero-coords">
+      RA  10h 44m 57s<br>
+      Dec +12° 21′ 53″<br>
+      z ~ 0.3 – 3.0<br>
+      ── Galaxy Formation ──
+    </div>
+    <div class="hero-inner">
+      <div class="hero-tag">Astronomy &amp; Astrophysics</div>
+      <h1 class="hero-name">Dr. Your<br><span class="outline">Name</span></h1>
+      <p class="hero-subtitle">Researcher · Galaxy Formation &amp; Evolution · Your Institution</p>
+      <p class="hero-bio">
+        I study how galaxies form, grow, and transform across cosmic time. My work combines observational data, simulations, and statistical methods to understand the processes that shape the large-scale structure of the universe.
+      </p>
+      <div class="hero-actions">
+        <a href="#publications" class="btn btn-primary">Publications</a>
+        <a href="#contact" class="btn btn-ghost">Contact</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-strip">
+    <div class="stat">
+      <div class="stat-num">24<span>+</span></div>
+      <div class="stat-lbl">Publications</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">8</div>
+      <div class="stat-lbl">Years Research</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">3</div>
+      <div class="stat-lbl">Active Grants</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">6</div>
+      <div class="stat-lbl">Collaborators</div>
+    </div>
+  </div>
+
+  <!-- RESEARCH -->
+  <div class="content">
+    <section class="section" id="research">
+      <div class="section-meta">
+        <span class="section-num">02 ——</span>
+        <h2 class="section-title">Research <em>Interests</em></h2>
+      </div>
+      <div class="research-grid">
+        <div class="r-card">
+          <div class="r-card-glow"></div>
+          <span class="r-card-icon">🌌</span>
+          <div class="r-card-title">Galaxy Formation &amp; Evolution</div>
+          <p class="r-card-desc">Tracing how galaxies assemble their stellar mass over cosmic time through star formation, mergers, and feedback processes.</p>
+        </div>
+        <div class="r-card">
+          <div class="r-card-glow"></div>
+          <span class="r-card-icon">🔭</span>
+          <div class="r-card-title">High-Redshift Observations</div>
+          <p class="r-card-desc">Observing the early universe with spectroscopic surveys to characterize galaxy populations in the first few billion years after the Big Bang.</p>
+        </div>
+        <div class="r-card">
+          <div class="r-card-glow"></div>
+          <span class="r-card-icon">⚛️</span>
+          <div class="r-card-title">Interstellar Medium &amp; Feedback</div>
+          <p class="r-card-desc">Understanding how gas, dust, and AGN feedback regulate star formation and shape the structure of galaxies across environments.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- PUBLICATIONS -->
+    <section class="section" id="publications">
+      <div class="section-meta">
+        <span class="section-num">03 ——</span>
+        <h2 class="section-title">Selected <em>Publications</em></h2>
+      </div>
+      <ul class="pub-list">
+        <li class="pub-item">
+          <div class="pub-year">2024</div>
+          <div>
+            <div class="pub-title">Title of Paper One</div>
+            <div class="pub-authors"><strong>Your Name</strong>, Coauthor A., Coauthor B.</div>
+            <div class="pub-venue">The Astrophysical Journal, Vol. X, Page Y</div>
+          </div>
+          <span class="pub-badge badge-featured">★ Featured</span>
+        </li>
+        <li class="pub-item">
+          <div class="pub-year">2023</div>
+          <div>
+            <div class="pub-title">Title of Paper Two</div>
+            <div class="pub-authors"><strong>Your Name</strong>, Coauthor C.</div>
+            <div class="pub-venue">Monthly Notices of the RAS, Vol. X, Page Y</div>
+          </div>
+          <span></span>
+        </li>
+        <li class="pub-item">
+          <div class="pub-year">2022</div>
+          <div>
+            <div class="pub-title">Title of Paper Three</div>
+            <div class="pub-authors">Coauthor D., <strong>Your Name</strong></div>
+            <div class="pub-venue">Astronomy &amp; Astrophysics, Vol. X, Page Y</div>
+          </div>
+          <span></span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="section" id="contact" style="border-bottom:none;">
+      <div class="section-meta">
+        <span class="section-num">04 ——</span>
+        <h2 class="section-title">Get in <em>Touch</em></h2>
+      </div>
+      <div class="contact-grid">
+        <div class="contact-cell">
+          <div class="contact-lbl">Email</div>
+          <div class="contact-val"><a href="/cdn-cgi/l/email-protection#b2cbddc7c09cd7dfd3dbdef2c7dcdbc4d7c0c1dbc6cb9cd7d6c7"><span class="__cf_email__" data-cfemail="364f59434418535b575f5a7643585f405344455f424f18535243">[email&#160;protected]</span></a></div>
+        </div>
+        <div class="contact-cell">
+          <div class="contact-lbl">Office</div>
+          <div class="contact-val">Room 123, XYZ Building</div>
+        </div>
+        <div class="contact-cell">
+          <div class="contact-lbl">Institution</div>
+          <div class="contact-val">Your University</div>
+        </div>
+        <div class="contact-cell">
+          <div class="contact-lbl">Department</div>
+          <div class="contact-val">Dept. of Astronomy &amp; Astrophysics</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <span>© 2025 Dr. Your Name · Astrophysics Researcher</span>
+    <span>Last updated Feb 2026</span>
+  </footer>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+  /* ── STARFIELD CANVAS ── */
+  (function () {
+    const canvas = document.getElementById('starfield');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+    let galaxyPairs = [];
+
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+      buildStars();
+      buildGalaxies();
+    }
+
+    function buildStars() {
+      stars = [];
+      const count = Math.floor((canvas.width * canvas.height) / 3500);
+      for (let i = 0; i < count; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          r: Math.random() * 1.4 + 0.2,
+          speed: Math.random() * 0.004 + 0.001,
+          phase: Math.random() * Math.PI * 2,
+          color: Math.random() > 0.85 ? '#ffd97d' : Math.random() > 0.7 ? '#aac0ff' : '#e8eaf6'
+        });
+      }
+    }
+
+    // Build 3 interacting galaxy pairs at fixed relative positions
+    function buildGalaxies() {
+      const W = canvas.width, H = canvas.height;
+      galaxyPairs = [
+        { cx: W * 0.82, cy: H * 0.18, angle: 0.4,  scale: 0.9, hue: 210 }, // top-right
+        { cx: W * 0.12, cy: H * 0.62, angle: -0.7, scale: 0.7, hue: 260 }, // mid-left
+        { cx: W * 0.68, cy: H * 0.80, angle: 1.1,  scale: 0.75, hue: 190 }, // bottom-right
+      ];
+    }
+
+    // Draw one spiral galaxy
+    function drawSpiral(ctx, cx, cy, r, angle, arms, color, alpha, t) {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angle + t * 0.00008);
+
+      // Core glow
+      const coreGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.28);
+      coreGrad.addColorStop(0,   `hsla(${color},80%,92%,${alpha * 0.9})`);
+      coreGrad.addColorStop(0.4, `hsla(${color},70%,70%,${alpha * 0.5})`);
+      coreGrad.addColorStop(1,   `hsla(${color},60%,50%,0)`);
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2);
+      ctx.fillStyle = coreGrad;
+      ctx.fill();
+
+      // Disk glow
+      const diskGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+      diskGrad.addColorStop(0,   `hsla(${color},70%,65%,${alpha * 0.18})`);
+      diskGrad.addColorStop(0.6, `hsla(${color},60%,50%,${alpha * 0.07})`);
+      diskGrad.addColorStop(1,   `hsla(${color},50%,40%,0)`);
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fillStyle = diskGrad;
+      ctx.fill();
+
+      // Spiral arms
+      for (let arm = 0; arm < arms; arm++) {
+        const armAngle = (arm / arms) * Math.PI * 2;
+        ctx.beginPath();
+        let first = true;
+        for (let i = 0; i <= 80; i++) {
+          const frac = i / 80;
+          const theta = armAngle + frac * Math.PI * 2.2;
+          const dist  = frac * r;
+          const spread = frac * r * 0.18;
+          const px = Math.cos(theta) * dist + (Math.random() - 0.5) * spread * 0.3;
+          const py = Math.sin(theta) * dist * 0.55 + (Math.random() - 0.5) * spread * 0.3;
+          if (first) { ctx.moveTo(px, py); first = false; }
+          else ctx.lineTo(px, py);
+        }
+        ctx.strokeStyle = `hsla(${color},75%,75%,${alpha * 0.35})`;
+        ctx.lineWidth = r * 0.04;
+        ctx.stroke();
+
+        // Star clusters along arm
+        for (let j = 0; j < 18; j++) {
+          const frac  = j / 18;
+          const theta = armAngle + frac * Math.PI * 2.2;
+          const dist  = frac * r;
+          const jitter = frac * r * 0.22;
+          const px = Math.cos(theta) * dist + (Math.random() - 0.5) * jitter;
+          const py = Math.sin(theta) * dist * 0.55 + (Math.random() - 0.5) * jitter;
+          const sr = (0.5 + Math.random() * 1.2) * (frac < 0.15 ? 1.8 : 1);
+          ctx.beginPath();
+          ctx.arc(px, py, sr, 0, Math.PI * 2);
+          ctx.fillStyle = `hsla(${color + 20},85%,90%,${alpha * (0.5 + frac * 0.5)})`;
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
+
+    // Draw tidal bridge / tail between two galaxies
+    function drawTidalBridge(ctx, x1, y1, x2, y2, color, alpha) {
+      const mx = (x1 + x2) / 2 + (Math.random() - 0.5) * 30;
+      const my = (y1 + y2) / 2 + (Math.random() - 0.5) * 30;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.quadraticCurveTo(mx, my, x2, y2);
+      const grad = ctx.createLinearGradient(x1, y1, x2, y2);
+      grad.addColorStop(0,   `hsla(${color},70%,80%,${alpha * 0.22})`);
+      grad.addColorStop(0.5, `hsla(${color},65%,75%,${alpha * 0.12})`);
+      grad.addColorStop(1,   `hsla(${color},70%,80%,${alpha * 0.22})`);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Scatter a few stars along the bridge
+      for (let i = 0; i < 12; i++) {
+        const frac = i / 12;
+        const bx = (1 - frac) * (1 - frac) * x1 + 2 * (1 - frac) * frac * mx + frac * frac * x2;
+        const by = (1 - frac) * (1 - frac) * y1 + 2 * (1 - frac) * frac * my + frac * frac * y2;
+        ctx.beginPath();
+        ctx.arc(bx + (Math.random()-0.5)*6, by + (Math.random()-0.5)*6, Math.random()*1.1+0.3, 0, Math.PI*2);
+        ctx.fillStyle = `hsla(${color},80%,90%,${alpha * 0.5})`;
+        ctx.fill();
+      }
+    }
+
+    function drawGalaxies(t) {
+      const isLight = document.documentElement.classList.contains('light');
+      if (isLight) return; // hide in light mode
+
+      galaxyPairs.forEach(g => {
+        const r     = 55 * g.scale;
+        const sep   = r * 1.7;
+        // Two galaxy centres offset from pair centre
+        const dx = Math.cos(g.angle) * sep * 0.5;
+        const dy = Math.sin(g.angle) * sep * 0.5;
+        const x1 = g.cx - dx, y1 = g.cy - dy;
+        const x2 = g.cx + dx, y2 = g.cy + dy;
+
+        // Tidal bridge first (behind galaxies)
+        drawTidalBridge(ctx, x1, y1, x2, y2, g.hue, 0.85);
+
+        // Galaxy 1 — larger, 2 arms
+        drawSpiral(ctx, x1, y1, r,        g.angle,        2, g.hue,      0.82, t);
+        // Galaxy 2 — smaller companion, 2 arms, slightly disturbed
+        drawSpiral(ctx, x2, y2, r * 0.62, g.angle + 0.9,  2, g.hue + 30, 0.75, t);
+
+        // Tidal tail trailing off galaxy 2
+        const tailX = x2 + Math.cos(g.angle + Math.PI * 0.6) * r * 1.4;
+        const tailY = y2 + Math.sin(g.angle + Math.PI * 0.6) * r * 0.9;
+        drawTidalBridge(ctx, x2, y2, tailX, tailY, g.hue + 20, 0.45);
+      });
+    }
+
+    function draw(t) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw galaxies under stars
+      drawGalaxies(t);
+
+      stars.forEach(s => {
+        const alpha = 0.3 + 0.7 * Math.abs(Math.sin(s.phase + t * s.speed));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = s.color;
+        ctx.globalAlpha = alpha;
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    requestAnimationFrame(draw);
+  })();
+
+  /* ── LIGHT / DARK TOGGL
