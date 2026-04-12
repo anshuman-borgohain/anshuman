@@ -581,9 +581,8 @@
     </div>
     <div class="hero-inner">
       <div class="hero-tag">Astronomy &amp; Astrophysics</div>
-      <h1 class="hero-name">Anshuman Borgohain<br></h1>
+      <h1 class="hero-name">Anshuman Borgohain</h1>
       <p class="hero-subtitle">Post Doctoral Fellow<br>Inter-University Centre for Astronomy and Astrophysics (IUCAA)</p>
-
       <p class="hero-bio">
         I study how galaxies form, grow, and transform across cosmic time. My work combines observational data, simulations, and statistical methods to understand the processes that shape the large-scale structure of the universe.
       </p>
@@ -654,7 +653,7 @@
           <div class="pub-year">2024</div>
           <div>
             <div class="pub-title">Title of Paper One</div>
-            <div class="pub-authors"><strong>Your Name</strong>, Coauthor A., Coauthor B.</div>
+            <div class="pub-authors"><strong>Anshuman Borgohain</strong>, Coauthor A., Coauthor B.</div>
             <div class="pub-venue">The Astrophysical Journal, Vol. X, Page Y</div>
           </div>
           <span class="pub-badge badge-featured">★ Featured</span>
@@ -663,7 +662,7 @@
           <div class="pub-year">2023</div>
           <div>
             <div class="pub-title">Title of Paper Two</div>
-            <div class="pub-authors"><strong>Your Name</strong>, Coauthor C.</div>
+            <div class="pub-authors"><strong>Anshuman Borgohain</strong>, Coauthor C.</div>
             <div class="pub-venue">Monthly Notices of the RAS, Vol. X, Page Y</div>
           </div>
           <span></span>
@@ -672,7 +671,7 @@
           <div class="pub-year">2022</div>
           <div>
             <div class="pub-title">Title of Paper Three</div>
-            <div class="pub-authors">Coauthor D., <strong>Your Name</strong></div>
+            <div class="pub-authors">Coauthor D., <strong>Anshuman Borgohain</strong></div>
             <div class="pub-venue">Astronomy &amp; Astrophysics, Vol. X, Page Y</div>
           </div>
           <span></span>
@@ -689,7 +688,7 @@
       <div class="contact-grid">
         <div class="contact-cell">
           <div class="contact-lbl">Email</div>
-          <div class="contact-val"><a href="mailto:your.email@university.edu">your.email@university.edu</a></div>
+          <div class="contact-val"><a href="/cdn-cgi/l/email-protection#0c7563797e2269616d65604c7962657a697e7f65787522696879"><span class="__cf_email__" data-cfemail="d7aeb8a2a5f9b2bab6bebb97a2b9bea1b2a5a4bea3aef9b2b3a2">[email&#160;protected]</span></a></div>
         </div>
         <div class="contact-cell">
           <div class="contact-lbl">Office</div>
@@ -697,7 +696,7 @@
         </div>
         <div class="contact-cell">
           <div class="contact-lbl">Institution</div>
-          <div class="contact-val">Your University</div>
+          <div class="contact-val">IUCAA, Pune</div>
         </div>
         <div class="contact-cell">
           <div class="contact-lbl">Department</div>
@@ -708,24 +707,20 @@
   </div>
 
   <footer>
-    <span>© 2025 Anshuman Borgohain</span>
+    <span>© 2025 Anshuman Borgohain · Astrophysics Researcher</span>
     <span>Last updated Mar 2026</span>
   </footer>
 </div>
 
 <script>
-  /* ── STARFIELD CANVAS ── */
+  /* ── STARFIELD + N-BODY GALAXY INTERACTIONS ── */
   (function () {
     const canvas = document.getElementById('starfield');
-    const ctx = canvas.getContext('2d');
+    const ctx    = canvas.getContext('2d');
+    const G = 1.0, SOFT = 1.6, DT = 0.013;
+
+    /* ── STARS ── */
     let stars = [];
-
-    function resize() {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
-      buildStars();
-    }
-
     function buildStars() {
       stars = [];
       const count = Math.floor((canvas.width * canvas.height) / 3500);
@@ -741,17 +736,152 @@
       }
     }
 
+    /* ── N-BODY SYSTEM FACTORY ──
+       scx/scy  : screen anchor (pixels)
+       SC       : sim-units → pixels scale
+       M1/M2    : core masses
+       sep      : initial separation (sim units)
+       vFrac    : fraction of circular velocity (< 1 = elliptic infall)
+       pro2     : companion disc prograde (true) or retrograde (false)
+       h1/h2    : hue for each galaxy
+       n1/n2    : particle counts
+       r1/r2max : max disc radius (sim units)
+    ── */
+    function makeSystem(scx, scy, SC, M1, M2, sep, vFrac, pro2, h1, h2, n1, n2, r1max, r2max) {
+      const vOrb = Math.sqrt(G * (M1 + M2) / sep) * vFrac;
+      const c1 = { x: sep*M2/(M1+M2), y:0, vx:0, vy: vOrb*M2/(M1+M2), mass:M1, hue:h1, gr: SC*0.48 };
+      const c2 = { x:-sep*M1/(M1+M2), y:0, vx:0, vy:-vOrb*M1/(M1+M2), mass:M2, hue:h2, gr: SC*0.32 };
+      const pts = [];
+      function disc(core, n, rMin, rMax, hue, pro) {
+        for (let i = 0; i < n; i++) {
+          const r  = rMin + Math.pow(Math.random(), 1.7) * (rMax - rMin); // realistic density falloff
+          const th = Math.random() * Math.PI * 2;
+          const vc = Math.sqrt(G * core.mass / (r + SOFT));
+          const s  = pro ? 1 : -1;
+          pts.push({
+            x:  core.x + Math.cos(th) * r,
+            y:  core.y + Math.sin(th) * r,
+            vx: core.vx - Math.sin(th) * s * vc,
+            vy: core.vy + Math.cos(th) * s * vc,
+            hue:    hue + (Math.random() - 0.5) * 35,
+            bright: 0.45 + Math.random() * 0.55,
+            r:      0.55 + Math.random() * 0.85
+          });
+        }
+      }
+      disc(c1, n1, 0.3, r1max, h1, true);
+      disc(c2, n2, 0.3, r2max, h2, pro2);
+      return { c1, c2, pts, scx, scy, SC };
+    }
+
+    /* ── TWO SYSTEMS, CORNER-PINNED ──
+       System A (top-right)  : Antennae-style — prograde+retrograde pair
+       System B (bottom-left): Close flyby — both prograde, nearly merged
+    ── */
+    let systems = [];
+    function buildSystems() {
+      const W = canvas.width, H = canvas.height;
+      systems = [
+        // Top-right — Antennae style (NGC 4038/39): retrograde companion → long symmetric tails
+        makeSystem(W*0.80, H*0.22,  28,  16, 10,  9.5, 0.73, false, 205, 232,  540, 340, 5.4, 3.8),
+        // Bottom-left — close prograde flyby: both discs prograde → one long tail + bridge
+        makeSystem(W*0.20, H*0.76,  22,  13,  9,  8.5, 0.71,  true, 268, 294,  420, 260, 4.6, 3.3),
+      ];
+    }
+
+    /* ── LEAPFROG INTEGRATOR ── */
+    function step(sys) {
+      const { c1, c2, pts } = sys;
+      const dx = c2.x-c1.x, dy = c2.y-c1.y;
+      const d2 = dx*dx + dy*dy + SOFT*SOFT, d = Math.sqrt(d2);
+      const f  = G / d2;
+      c1.vx += f*c2.mass*dx/d*DT;  c1.vy += f*c2.mass*dy/d*DT;
+      c2.vx -= f*c1.mass*dx/d*DT;  c2.vy -= f*c1.mass*dy/d*DT;
+      c1.x  += c1.vx*DT;           c1.y  += c1.vy*DT;
+      c2.x  += c2.vx*DT;           c2.y  += c2.vy*DT;
+      const cores = [c1, c2];
+      for (const p of pts) {
+        let ax = 0, ay = 0;
+        for (const c of cores) {
+          const ex = c.x-p.x, ey = c.y-p.y;
+          const r2 = ex*ex + ey*ey + SOFT*SOFT, r = Math.sqrt(r2);
+          const f2 = G*c.mass/r2;
+          ax += f2*ex/r;  ay += f2*ey/r;
+        }
+        p.vx += ax*DT;  p.vy += ay*DT;
+        p.x  += p.vx*DT; p.y += p.vy*DT;
+      }
+    }
+
+    /* ── DRAW ONE SYSTEM — additive blending ── */
+    function drawSys(sys) {
+      const { c1, c2, pts, scx, scy, SC } = sys;
+      const toS = (sx, sy) => [scx + sx*SC, scy + sy*SC];
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter'; // additive: stacked particles glow like real sims
+
+      for (const p of pts) {
+        const [px, py] = toS(p.x, p.y);
+        if (px < -50 || px > canvas.width+50 || py < -50 || py > canvas.height+50) continue;
+        const gr = ctx.createRadialGradient(px, py, 0, px, py, p.r * 2.4);
+        gr.addColorStop(0,   `hsla(${p.hue},92%,94%,${p.bright * 0.52})`);
+        gr.addColorStop(0.5, `hsla(${p.hue},80%,72%,${p.bright * 0.16})`);
+        gr.addColorStop(1,   `hsla(${p.hue},70%,50%,0)`);
+        ctx.beginPath();
+        ctx.arc(px, py, p.r * 2.4, 0, Math.PI * 2);
+        ctx.fillStyle = gr;
+        ctx.fill();
+      }
+
+      // Bright nuclei
+      for (const core of [c1, c2]) {
+        const [cx, cy] = toS(core.x, core.y);
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, core.gr);
+        g.addColorStop(0,   `hsla(${core.hue},100%,100%,1)`);
+        g.addColorStop(0.25,`hsla(${core.hue},90%,88%,0.85)`);
+        g.addColorStop(0.6, `hsla(${core.hue},75%,65%,0.30)`);
+        g.addColorStop(1,   `hsla(${core.hue},65%,45%,0)`);
+        ctx.beginPath();
+        ctx.arc(cx, cy, core.gr, 0, Math.PI * 2);
+        ctx.fillStyle = g;
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    /* ── MAIN LOOP ── */
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+      buildStars();
+      buildSystems();
+    }
+
     function draw(t) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      stars.forEach(s => {
+      const isLight = document.documentElement.classList.contains('light');
+
+      // Slight fade instead of full clear → motion-blur / star-trail feel
+      ctx.fillStyle = isLight ? 'rgba(238,240,251,0.55)' : 'rgba(4,5,13,0.20)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Stars (normal blend, always visible)
+      for (const s of stars) {
         const alpha = 0.3 + 0.7 * Math.abs(Math.sin(s.phase + t * s.speed));
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = s.color;
-        ctx.globalAlpha = alpha;
+        ctx.fillStyle   = s.color;
+        ctx.globalAlpha = isLight ? alpha * 0.15 : alpha;
         ctx.fill();
-      });
+      }
       ctx.globalAlpha = 1;
+
+      // Sim + draw (dark only)
+      if (!isLight) {
+        for (let i = 0; i < 6; i++) systems.forEach(step);
+        systems.forEach(drawSys);
+      }
+
       requestAnimationFrame(draw);
     }
 
